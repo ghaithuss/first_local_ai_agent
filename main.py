@@ -37,34 +37,37 @@ def get_weather(city):
 messages = [
     {
         "role": "user",
-        "content": "What is the weather in tunis?"
+        "content": "What is the weather in tunis and paris and sfax?"
     }
 ]
 
-response = chat(
-    model="qwen3:14b",
-    messages=messages,
-    tools=[get_weather]
-)
 
-if response.message.tool_calls:
+while True:
 
-    tool_request = response.message.tool_calls[0]
-
-    result = get_weather(
-        tool_request.function.arguments["city"]
-    )
-
-
-    messages.append(response.message)
-    messages.append({
-        "role": "tool",
-        "tool_name": "get_weather",
-        "content": result
-    })
-    final_response = chat(
+    response = chat(
         model="qwen3:14b",
-        messages=messages
+        messages=messages,
+        tools=[get_weather]
     )
 
-    print(final_response.message.content)
+    if response.message.tool_calls:
+
+        messages.append(response.message)
+
+        for tool_call in response.message.tool_calls:
+
+            city = tool_call.function.arguments["city"]
+
+            result = get_weather(city)
+
+            messages.append({
+                "role": "tool",
+                "tool_name": "get_weather",
+                "content": result
+            })
+
+    else:
+
+        print(response.message.content)
+
+        break
