@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weather Agent</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  #chat-window::-webkit-scrollbar { width: 6px; }
+  #chat-window::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: 4px; }
+
+  .bubble-in { animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #9ca3af; display: inline-block;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+</style>
+</head>
+<body class="bg-[#0f1117] text-gray-100 h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-gray-800 px-6 py-4 flex items-center gap-3">
+    <div class="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-lg">
+      🌦️
+    </div>
+    <div>
+      <h1 class="text-sm font-semibold">Weather Agent</h1>
+      <p class="text-xs text-gray-500">Powered by Ollama</p>
+    </div>
+  </header>
+
+  <!-- Chat window -->
+  <main id="chat-window" class="flex-1 overflow-y-auto px-4 md:px-0">
+    <div class="max-w-2xl mx-auto py-6 space-y-4" id="messages">
+      <div class="bubble-in flex">
+        <div class="bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed">
+          Hi! Ask me about the weather anywhere — e.g. "What's the weather in Tunis right now?"
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Input bar -->
+  <footer class="border-t border-gray-800 px-4 py-4">
+    <form id="chat-form" class="max-w-2xl mx-auto flex items-center gap-2">
+      <input
+        id="message-input"
+        type="text"
+        autocomplete="off"
+        placeholder="Ask about the weather..."
+        class="flex-1 bg-[#1a1d27] border border-gray-800 rounded-full px-4 py-2.5 text-sm
+               focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder-gray-500"
+      />
+      <button
+        type="submit"
+        class="bg-sky-500 hover:bg-sky-400 transition rounded-full w-10 h-10
+               flex items-center justify-center shrink-0"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="white" stroke-width="2" class="w-4 h-4">
+          <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </form>
+  </footer>
+
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("message-input");
+    const messages = document.getElementById("messages");
+    const chatWindow = document.getElementById("chat-window");
+
+    function scrollToBottom() {
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function addMessage(text, sender) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `bubble-in flex ${sender === "user" ? "justify-end" : ""}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = sender === "user"
+        ? "bg-sky-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed"
+        : "bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed";
+      bubble.textContent = text;
+
+      wrapper.appendChild(bubble);
+      messages.appendChild(wrapper);
+      scrollToBottom();
+      return wrapper;
+    }
+
+    function addTypingIndicator() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "bubble-in flex";
+      wrapper.id = "typing-indicator";
+      wrapper.innerHTML = `
+        <div class="bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>`;
+      messages.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById("typing-indicator");
+      if (el) el.remove();
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      input.value = "";
+      addTypingIndicator();
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
+        const data = await res.json();
+        removeTypingIndicator();
+        addMessage(data.reply, "agent");
+      } catch (err) {
+        removeTypingIndicator();
+        addMessage("Connection error. Is the server running?", "agent");
+      }
+    });
+  </script>
+</body>
+</html>
