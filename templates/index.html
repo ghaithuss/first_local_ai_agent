@@ -1,148 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Weather Agent</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JaRvis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Segoe UI', system-ui, sans-serif; }
-  #chat-window::-webkit-scrollbar { width: 6px; }
-  #chat-window::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: 4px; }
-
-  .bubble-in { animation: fadeIn 0.25s ease-out; }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #9ca3af; display: inline-block;
-    animation: bounce 1.2s infinite;
-  }
-  .dot:nth-child(2) { animation-delay: 0.15s; }
-  .dot:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes bounce {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-4px); }
-  }
+:root{
+  --bg:#E8EDF1; --panel:#F8FAFB; --ink:#13222C; --muted:#5D7280;
+  --line:#CBD6DD; --accent:#1F4FFF; --accent-ink:#fff; --user:#13222C; --user-ink:#F2F6F8;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0F1A22; --panel:#16252F; --ink:#E7EEF2; --muted:#8CA1AE;
+        --line:#26394555; --accent:#5B84FF; --accent-ink:#0F1A22; --user:#2A4152; --user-ink:#F2F6F8;}
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Sora",system-ui,-apple-system,"Segoe UI",sans-serif;
+  display:flex;flex-direction:column;line-height:1.6}
+header{display:flex;align-items:center;gap:14px;padding:18px 24px;max-width:820px;width:100%;margin:0 auto}
+.core{width:44px;height:44px;color:var(--accent);flex:none}
+.core svg,.avatar svg{width:100%;height:100%;display:block}
+.core.busy{animation:bob .9s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);filter:drop-shadow(0 0 0 transparent)}
+  50%{transform:translateY(-3px);filter:drop-shadow(0 4px 6px color-mix(in srgb,var(--accent) 50%,transparent))}}
+.avatar{width:28px;height:28px;color:var(--accent);flex:none;margin-top:-2px}
+h1{font-size:1.35rem;font-weight:700;margin:0;letter-spacing:.01em}
+.sub{color:var(--muted);font-size:.82rem}
+.spacer{flex:1}
+#reset{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  padding:7px 12px;font:inherit;font-size:.8rem;cursor:pointer}
+#reset:hover{color:var(--ink);border-color:var(--muted)}
+main{flex:1;overflow-y:auto;padding:0 24px}
+#log{max-width:820px;margin:0 auto;padding:8px 0 24px;display:flex;flex-direction:column;gap:20px}
+.msg{max-width:88%;font-size:.95rem;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--user);color:var(--user-ink);padding:10px 16px;border-radius:18px 18px 4px 18px}
+.msg.bot{align-self:flex-start;display:flex;gap:12px}
+.msg.bot .txt{padding-top:2px}
+.msg.err .txt{color:#C0392B}
+.msg a{color:var(--accent)}
+.msg code{background:var(--panel);padding:1px 6px;border-radius:5px;font-size:.88em}
+.empty{text-align:left;padding:8vh 0 0}
+.empty h2{font-size:clamp(1.6rem,4.5vw,2.4rem);font-weight:600;margin:0 0 8px;line-height:1.2}
+.empty p{color:var(--muted);margin:0 0 22px;max-width:46ch}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;
+  padding:9px 16px;font:inherit;font-size:.85rem;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+footer{padding:12px 24px 22px}
+.composer{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:18px;padding:8px 8px 8px 18px}
+.composer:focus-within{border-color:var(--accent)}
+textarea{flex:1;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:.95rem;
+  resize:none;max-height:160px;padding:8px 0}
+textarea::placeholder{color:var(--muted)}
+#send{background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;width:42px;height:42px;
+  font-size:1.1rem;cursor:pointer;flex:none}
+#send:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.core.busy{animation:none}}
+@media (max-width:520px){header,main,footer{padding-left:14px;padding-right:14px}.msg{max-width:96%}}
 </style>
 </head>
-<body class="bg-[#0f1117] text-gray-100 h-screen flex flex-col">
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="robot" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="16" y1="8" x2="16" y2="4"/>
+    <circle cx="16" cy="3.2" r="1.6" fill="currentColor"/>
+    <rect x="5" y="8" width="22" height="18" rx="6" fill="var(--panel)"/>
+    <rect x="1.5" y="14" width="3.5" height="6" rx="1.5" fill="currentColor"/>
+    <rect x="27" y="14" width="3.5" height="6" rx="1.5" fill="currentColor"/>
+    <circle cx="12" cy="16" r="2.2" fill="currentColor" stroke="none"/>
+    <circle cx="20" cy="16" r="2.2" fill="currentColor" stroke="none"/>
+    <path d="M12 21.5h8"/>
+  </symbol>
+</svg>
+<header>
+  <div class="core" id="core"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#robot"/></svg></div>
+  <div><h1>JaRvis</h1><div class="sub" id="status">Ready</div></div>
+  <div class="spacer"></div>
+  <button id="reset" type="button">New chat</button>
+</header>
 
-  <!-- Header -->
-  <header class="border-b border-gray-800 px-6 py-4 flex items-center gap-3">
-    <div class="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-lg">
-      🌦️
-    </div>
-    <div>
-      <h1 class="text-sm font-semibold">Weather Agent</h1>
-      <p class="text-xs text-gray-500">Powered by Ghaithuss</p>
-    </div>
-  </header>
-
-  <!-- Chat window -->
-  <main id="chat-window" class="flex-1 overflow-y-auto px-4 md:px-0">
-    <div class="max-w-2xl mx-auto py-6 space-y-4" id="messages">
-      <div class="bubble-in flex">
-        <div class="bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed">
-          Hi! Ask me about the weather anywhere — e.g. "What's the weather in Tunis right now?"
-        </div>
+<main id="scroll">
+  <div id="log">
+    <div class="empty" id="empty">
+      <h2>What can I do for you?</h2>
+      <p>Ask me anything. I can check the weather, search the web, and open websites for you.</p>
+      <div class="chips">
+        <button class="chip" type="button">What's the weather in Tunis?</button>
+        <button class="chip" type="button">Search for the best gaming PCs in 2026</button>
+        <button class="chip" type="button">Open the Mytek Tunisia website</button>
       </div>
     </div>
-  </main>
+  </div>
+</main>
 
-  <!-- Input bar -->
-  <footer class="border-t border-gray-800 px-4 py-4">
-    <form id="chat-form" class="max-w-2xl mx-auto flex items-center gap-2">
-      <input
-        id="message-input"
-        type="text"
-        autocomplete="off"
-        placeholder="Ask about the weather..."
-        class="flex-1 bg-[#1a1d27] border border-gray-800 rounded-full px-4 py-2.5 text-sm
-               focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder-gray-500"
-      />
-      <button
-        type="submit"
-        class="bg-sky-500 hover:bg-sky-400 transition rounded-full w-10 h-10
-               flex items-center justify-center shrink-0"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="white" stroke-width="2" class="w-4 h-4">
-          <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
-        </svg>
-      </button>
-    </form>
-  </footer>
+<footer>
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Message JaRvis" autofocus></textarea>
+    <button id="send" type="button" aria-label="Send">&#10148;</button>
+  </div>
+</footer>
 
-  <script>
-    const form = document.getElementById("chat-form");
-    const input = document.getElementById("message-input");
-    const messages = document.getElementById("messages");
-    const chatWindow = document.getElementById("chat-window");
+<script>
+const log = document.getElementById("log");
+const scroller = document.getElementById("scroll");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("send");
+const core = document.getElementById("core");
+const status = document.getElementById("status");
+let busy = false;
 
-    function scrollToBottom() {
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
+function render(text){
+  const s = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return s
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+    .replace(/`(.+?)`/g,"<code>$1</code>")
+    .replace(/(https?:\/\/[^\s<)]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/\n/g,"<br>");
+}
 
-    function addMessage(text, sender) {
-      const wrapper = document.createElement("div");
-      wrapper.className = `bubble-in flex ${sender === "user" ? "justify-end" : ""}`;
+function addMsg(role, text, isErr){
+  const el = document.getElementById("empty");
+  if (el) el.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + role + (isErr ? " err" : "");
+  if (role === "user") d.textContent = text;
+  else d.innerHTML = '<span class="avatar"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#robot"/></svg></span><div class="txt">' + render(text) + "</div>";
+  log.appendChild(d);
+  scroller.scrollTop = scroller.scrollHeight;
+  return d;
+}
 
-      const bubble = document.createElement("div");
-      bubble.className = sender === "user"
-        ? "bg-sky-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed"
-        : "bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[75%] text-sm leading-relaxed";
-      bubble.textContent = text;
+function setBusy(b){
+  busy = b;
+  sendBtn.disabled = b;
+  core.classList.toggle("busy", b);
+  status.textContent = b ? "Thinking..." : "Ready";
+}
 
-      wrapper.appendChild(bubble);
-      messages.appendChild(wrapper);
-      scrollToBottom();
-      return wrapper;
-    }
+async function send(text){
+  text = text.trim();
+  if (!text || busy) return;
+  addMsg("user", text);
+  input.value = ""; input.style.height = "auto";
+  setBusy(true);
+  try{
+    const r = await fetch("/chat", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message:text})});
+    const data = await r.json();
+    addMsg("bot", data.reply, !r.ok);
+  }catch(e){
+    addMsg("bot", "I can't reach the server. Check that app.py is still running.", true);
+  }
+  setBusy(false);
+  input.focus();
+}
 
-    function addTypingIndicator() {
-      const wrapper = document.createElement("div");
-      wrapper.className = "bubble-in flex";
-      wrapper.id = "typing-indicator";
-      wrapper.innerHTML = `
-        <div class="bg-[#1a1d27] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </div>`;
-      messages.appendChild(wrapper);
-      scrollToBottom();
-    }
-
-    function removeTypingIndicator() {
-      const el = document.getElementById("typing-indicator");
-      if (el) el.remove();
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-
-      addMessage(text, "user");
-      input.value = "";
-      addTypingIndicator();
-
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text }),
-        });
-        const data = await res.json();
-        removeTypingIndicator();
-        addMessage(data.reply, "agent");
-      } catch (err) {
-        removeTypingIndicator();
-        addMessage("Connection error. Is the server running?", "agent");
-      }
-    });
-  </script>
+sendBtn.addEventListener("click", () => send(input.value));
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(input.value); }
+});
+input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 160) + "px";
+});
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => send(c.textContent)));
+document.getElementById("reset").addEventListener("click", async () => {
+  try { await fetch("/reset", {method:"POST"}); } catch(e) {}
+  location.reload();
+});
+</script>
 </body>
 </html>
