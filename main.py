@@ -3,7 +3,7 @@ import os
 import requests
 import webbrowser
 from dotenv import load_dotenv
-load_dotenv()  # Load environment variables from .env file
+load_dotenv()  
 from tavily import TavilyClient
 tavily_client = TavilyClient(api_key=os.getenv("Tavily_API_KEY"))
 
