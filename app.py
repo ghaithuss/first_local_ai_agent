@@ -37,7 +37,6 @@ SYSTEM_PROMPT = {
 messages = [SYSTEM_PROMPT]
 
 
-# ---------- Tools ----------
 
 def get_weather(city):
     """Get the current temperature for a city, e.g. Tunis."""
@@ -118,7 +117,6 @@ TOOLS = {
 }
 
 
-# ---------- Agent ----------
 
 def get_agent_response(user_message):
     global messages, pending_url
@@ -223,7 +221,6 @@ def get_agent_response(user_message):
     return "I couldn't complete the request. Please try again."
 
 
-# ---------- Flask Routes ----------
 
 @app.route("/")
 def home():
