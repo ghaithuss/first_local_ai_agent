@@ -1,0 +1,5 @@
+flask
+ollama
+tavily-python
+python-dotenv
+requests
