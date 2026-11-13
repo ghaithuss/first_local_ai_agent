@@ -5,7 +5,7 @@ import webbrowser
 from dotenv import load_dotenv
 load_dotenv()  
 from tavily import TavilyClient
-tavily_client = TavilyClient(api_key=os.getenv("Tavily_API_KEY"))
+tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 def get_weather(city):
     """get the current temperature for a city eg:tunis """
